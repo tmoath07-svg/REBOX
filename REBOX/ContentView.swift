@@ -18,6 +18,9 @@ private enum REBOXTab: String, CaseIterable {
 
 struct ContentView: View {
     @EnvironmentObject private var controller: ControllerManager
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var isCompact: Bool { horizontalSizeClass == .compact }
     @State private var selectedTab: REBOXTab = .home
     @State private var showConnectInfo = false
 
@@ -27,7 +30,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 header
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: isCompact ? 16 : 22) {
                         switch selectedTab {
                         case .home: homeContent
                         case .controller: controllerContent
@@ -35,8 +38,8 @@ struct ContentView: View {
                         case .settings: settingsContent
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 18)
+                    .padding(.horizontal, isCompact ? 16 : 24)
+                    .padding(.top, isCompact ? 12 : 18)
                     .padding(.bottom, 30)
                     .frame(maxWidth: 920)
                     .frame(maxWidth: .infinity)
@@ -59,7 +62,7 @@ struct ContentView: View {
                         .font(.system(size: 18, weight: .black))
                         .foregroundStyle(REBOXTheme.xbox)
                     Text("REBOX")
-                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .font(.system(size: isCompact ? 22 : 26, weight: .black, design: .rounded))
                         .tracking(3)
                         .foregroundStyle(.white)
                 }
@@ -82,8 +85,8 @@ struct ContentView: View {
             .padding(.vertical, 9)
             .background(.white.opacity(0.06), in: Capsule())
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 14)
+        .padding(.horizontal, isCompact ? 16 : 24)
+        .padding(.top, 10)
         .padding(.bottom, 8)
         .frame(maxWidth: 968)
     }
@@ -92,7 +95,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("YOUR GAME.\nYOUR SPACE.")
-                    .font(.system(size: 42, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 34 : 42, weight: .black, design: .rounded))
                     .tracking(-1.8)
                     .lineSpacing(-5)
                     .foregroundStyle(.white)
@@ -100,7 +103,7 @@ struct ContentView: View {
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(REBOXTheme.cyan)
             }
-            .padding(.top, 8)
+            .padding(.top, isCompact ? 2 : 8)
 
             consoleCard
 
@@ -152,20 +155,20 @@ struct ContentView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 24)
                         .fill(LinearGradient(colors: [Color(hex: 0x252B37), Color(hex: 0x11151E)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 116, height: 142)
+                        .frame(width: isCompact ? 88 : 116, height: isCompact ? 108 : 142)
                         .overlay(RoundedRectangle(cornerRadius: 24).stroke(.white.opacity(0.09), lineWidth: 1))
                     VStack(spacing: 9) {
                         Circle()
                             .fill(Color(hex: 0x252B37))
-                            .frame(width: 74, height: 74)
+                            .frame(width: isCompact ? 58 : 74, height: isCompact ? 58 : 74)
                             .overlay(Circle().stroke(.white.opacity(0.10), lineWidth: 1))
-                            .overlay(Image(systemName: "xbox.logo").font(.system(size: 38, weight: .light)).foregroundStyle(REBOXTheme.xbox))
+                            .overlay(Image(systemName: "xbox.logo").font(.system(size: isCompact ? 30 : 38, weight: .light)).foregroundStyle(REBOXTheme.xbox))
                         RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.15)).frame(width: 52, height: 3)
                     }
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     Text("SERIES S")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
+                        .font(.system(size: isCompact ? 20 : 24, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                     Text("Xbox home console")
                         .font(.system(size: 12, weight: .medium))
@@ -197,7 +200,7 @@ struct ContentView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(20)
+        .padding(isCompact ? 15 : 20)
         .background(LinearGradient(colors: [Color(hex: 0x1B2630), REBOXTheme.panel], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 26))
         .overlay(RoundedRectangle(cornerRadius: 26).stroke(REBOXTheme.xbox.opacity(0.24), lineWidth: 1))
     }
@@ -209,7 +212,7 @@ struct ContentView: View {
                 Image(systemName: "gamecontroller.fill").font(.system(size: 32)).foregroundStyle(REBOXTheme.cyan)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(controller.controllerName ?? "DUALSHOCK 4")
-                        .font(.system(size: 17, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                        .font(.system(size: isCompact ? 14 : 17, weight: .bold, design: .rounded)).foregroundStyle(.white)
                     Text(controller.isConnected ? "متصلة بالآيباد" : "اربط يد التحكم من إعدادات Bluetooth")
                         .font(.system(size: 12)).foregroundStyle(REBOXTheme.muted)
                 }
@@ -257,7 +260,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("SETTINGS", subtitle: "إعدادات REBOX")
             infoRow("App version", value: "0.1.0", symbol: "app")
-            infoRow("Platform", value: "Native iPadOS", symbol: "ipad")
+            infoRow("Platform", value: "iOS + iPadOS", symbol: "ipad")
             infoRow("Controller API", value: "GameController", symbol: "gamecontroller")
             infoRow("Streaming engine", value: "Not integrated", symbol: "waveform.path")
             Text("هوية REBOX أصلية: ألوان استوائية نيون مع لمسات Xbox الخضراء. لا تستخدم واجهة التطبيق صورًا أو شعارات GTA.")
@@ -274,7 +277,7 @@ struct ContentView: View {
                 } label: {
                     VStack(spacing: 6) {
                         Image(systemName: tab.symbol).font(.system(size: 17, weight: .semibold))
-                        Text(tab.rawValue).font(.system(size: 10, weight: .semibold))
+                        Text(tab.rawValue).font(.system(size: isCompact ? 9 : 10, weight: .semibold))
                     }
                     .foregroundStyle(selectedTab == tab ? REBOXTheme.cyan : REBOXTheme.muted)
                     .frame(maxWidth: .infinity)
@@ -284,7 +287,7 @@ struct ContentView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, isCompact ? 5 : 12)
         .background(.ultraThinMaterial)
         .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.08)).frame(height: 1) }
     }
@@ -299,11 +302,11 @@ struct ContentView: View {
     private func metricCard(title: String, value: String, note: String, symbol: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(REBOXTheme.pink)
-            Text(value).font(.system(size: 17, weight: .black, design: .rounded)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+            Text(value).font(.system(size: isCompact ? 14 : 17, weight: .black, design: .rounded)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.65)
             Text(note).font(.system(size: 8, weight: .bold)).tracking(1).foregroundStyle(REBOXTheme.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(13)
+        .padding(isCompact ? 10 : 13)
         .background(REBOXTheme.panel, in: RoundedRectangle(cornerRadius: 17))
     }
 
