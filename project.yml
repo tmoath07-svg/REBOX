@@ -6,10 +6,15 @@ options:
   createIntermediateGroups: true
 settings:
   base:
-    SWIFT_VERSION: "5.0"
+    SWIFT_VERSION: "6.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     IPHONEOS_DEPLOYMENT_TARGET: "26.0"
     CODE_SIGN_STYLE: Automatic
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: YES
+    SWIFT_UPCOMING_FEATURE_NONISOLATED_NONSENDING_BY_DEFAULT: YES
+    SWIFT_UPCOMING_FEATURE_INFER_ISOLATED_CONFORMANCES: YES
 packages:
   StarfoldShared:
     path: StarfoldVendor/Packages/StarfoldShared
@@ -29,12 +34,17 @@ targets:
       - path: REBOX
         excludes:
           - Info.plist
+      - path: StarfoldVendor/StarfoldiOS
+        excludes:
+          - StarfoldiOSApp.swift
+          - Configuration/Info.plist
     info:
       path: REBOX/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tmoath07.rebox
         PRODUCT_NAME: REBOX
-        SWIFT_VERSION: "5.0"
+        SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
+        MARKETING_VERSION: "1.0"
