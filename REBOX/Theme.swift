@@ -55,7 +55,7 @@ struct TropicalBackdrop: View {
     }
 }
 
-struct PalmFrond: Shape {
+nonisolated struct PalmFrond: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let stem = CGPoint(x: rect.width * 0.45, y: rect.height * 0.92)
