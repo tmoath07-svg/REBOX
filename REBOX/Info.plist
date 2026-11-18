@@ -4,9 +4,41 @@
 <dict>
     <key>CFBundleDisplayName</key>
     <string>REBOX</string>
+    <key>GCSupportedGameControllers</key>
+    <array>
+        <dict>
+            <key>ProfileName</key>
+            <string>ExtendedGamepad</string>
+        </dict>
+    </array>
+    <key>GCSupportsControllerUserInteraction</key>
+    <true/>
+    <key>GCSupportsGameMode</key>
+    <true/>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    <key>NSCameraUsageDescription</key>
+    <string>REBOX uses video streaming capabilities to display your Xbox gameplay.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>REBOX connects to your Xbox console on the local network for Remote Play.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>REBOX can use the microphone for in-game voice chat while streaming.</string>
+    <key>StarfoldMicrosoftClientID</key>
+    <string>1f907974-e22b-4810-a9de-d9647380c97e</string>
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
     <key>UILaunchScreen</key>
-    <dict/>
+    <dict>
+        <key>UIColorName</key>
+        <string>LaunchBackground</string>
+    </dict>
     <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
         <string>UIInterfaceOrientationPortraitUpsideDown</string>
