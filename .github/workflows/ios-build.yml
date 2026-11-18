@@ -45,6 +45,14 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Verify Microsoft OAuth client configuration
+        run: |
+          APP_PLIST="build/Simulator/Build/Products/Debug-iphonesimulator/REBOX.app/Info.plist"
+          test -f "$APP_PLIST"
+          CLIENT_ID=$(/usr/libexec/PlistBuddy -c "Print :StarfoldMicrosoftClientID" "$APP_PLIST")
+          test "$CLIENT_ID" = "1f907974-e22b-4810-a9de-d9647380c97e"
+          echo "Microsoft OAuth client ID is present in the built app."
+
       - name: Package simulator app
         run: |
           APP_PATH="build/Simulator/Build/Products/Debug-iphonesimulator/REBOX.app"
