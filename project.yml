@@ -38,6 +38,7 @@ targets:
         excludes:
           - StarfoldiOSApp.swift
           - Configuration/Info.plist
+      - path: "StarfoldVendor/Preview Content"
     info:
       path: REBOX/Info.plist
     settings:
