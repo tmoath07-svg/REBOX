@@ -21,20 +21,21 @@ final class ControllerManager: ObservableObject {
             forName: .GCControllerDidConnect, object: nil, queue: .main
         ) { [weak self] note in
             guard let controller = note.object as? GCController else { return }
-            Task { @MainActor in self?.attach(controller) }
+            MainActor.assumeIsolated {
+                self?.attach(controller)
+            }
         })
         observers.append(NotificationCenter.default.addObserver(
             forName: .GCControllerDidDisconnect, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.refreshControllers() }
+            MainActor.assumeIsolated {
+                self?.refreshControllers()
+            }
         })
         refreshControllers()
         GCController.startWirelessControllerDiscovery(completionHandler: nil)
     }
 
-    deinit {
-        observers.forEach { NotificationCenter.default.removeObserver($0) }
-    }
 
     func refreshControllers() {
         if let controller = GCController.controllers().first {
