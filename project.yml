@@ -34,6 +34,11 @@ targets:
       - path: REBOX
         excludes:
           - Info.plist
+          # Legacy placeholder UI is not part of the Starfold streaming app.
+          - ControllerManager.swift
+          - ContentView.swift
+          - StreamingEngine.swift
+          - Theme.swift
       - path: StarfoldVendor/StarfoldiOS
         excludes:
           - StarfoldiOSApp.swift
