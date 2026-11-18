@@ -2,18 +2,29 @@ name: REBOX
 options:
   bundleIdPrefix: com.tmoath07
   deploymentTarget:
-    iOS: "17.0"
+    iOS: "26.0"
   createIntermediateGroups: true
 settings:
   base:
     SWIFT_VERSION: "5.0"
     TARGETED_DEVICE_FAMILY: "1,2"
-    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
     CODE_SIGN_STYLE: Automatic
+packages:
+  StarfoldShared:
+    path: StarfoldVendor/Packages/StarfoldShared
+  StreamKit:
+    path: StarfoldVendor/Packages/StreamKit
+  XboxKit:
+    path: StarfoldVendor/Packages/XboxKit
 targets:
   REBOX:
     type: application
     platform: iOS
+    dependencies:
+      - package: StarfoldShared
+      - package: StreamKit
+      - package: XboxKit
     sources:
       - path: REBOX
         excludes:
