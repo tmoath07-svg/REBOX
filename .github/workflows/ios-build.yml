@@ -1,4 +1,4 @@
-name: REBOX iOS Build
+name: REBOX iPadOS Build
 
 on:
   push:
@@ -12,9 +12,9 @@ permissions:
 
 jobs:
   build:
-    name: Build iPadOS app (Simulator)
+    name: Build simulator app and unsigned device IPA
     runs-on: macos-15
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,26 +30,56 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Resolve packages
+        run: xcodebuild -resolvePackageDependencies -project REBOX.xcodeproj -scheme REBOX
+
       - name: Build for iOS Simulator
         run: |
           xcodebuild \
             -project REBOX.xcodeproj \
             -scheme REBOX \
             -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build/DerivedData \
+            -derivedDataPath build/Simulator \
             CODE_SIGNING_ALLOWED=NO \
             build
 
       - name: Package simulator app
         run: |
-          APP_PATH="build/DerivedData/Build/Products/Debug-iphonesimulator/REBOX.app"
+          APP_PATH="build/Simulator/Build/Products/Debug-iphonesimulator/REBOX.app"
           test -d "$APP_PATH"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" build/REBOX-Simulator-App.zip
 
-      - name: Upload build artifact
+      - name: Archive for physical iPad (unsigned)
+        run: |
+          xcodebuild \
+            -project REBOX.xcodeproj \
+            -scheme REBOX \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/REBOX-Unsigned.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH="build/REBOX-Unsigned.xcarchive/Products/Applications/REBOX.app"
+          test -d "$APP_PATH"
+          mkdir -p build/ipa/Payload
+          ditto "$APP_PATH" build/ipa/Payload/REBOX.app
+          (cd build/ipa && /usr/bin/zip -qry ../REBOX-unsigned.ipa Payload)
+          test -s build/REBOX-unsigned.ipa
+
+      - name: Upload simulator artifact
         uses: actions/upload-artifact@v4
         with:
           name: REBOX-iPadOS-Simulator
           path: build/REBOX-Simulator-App.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: REBOX-unsigned-IPA
+          path: build/REBOX-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
