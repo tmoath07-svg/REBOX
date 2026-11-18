@@ -1,0 +1,3 @@
+[submodule "StarfoldVendor"]
+	path = StarfoldVendor
+	url = https://github.com/JarvanSun/Starfold.git
