@@ -10,16 +10,16 @@ settings:
     TARGETED_DEVICE_FAMILY: "2"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     CODE_SIGN_STYLE: Automatic
-    GENERATE_INFOPLIST_FILE: YES
-    INFOPLIST_KEY_CFBundleDisplayName: REBOX
-    INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-    INFOPLIST_KEY_UILaunchScreen_Generation: YES
 targets:
   REBOX:
     type: application
     platform: iOS
     sources:
       - path: REBOX
+        excludes:
+          - Info.plist
+    info:
+      path: REBOX/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tmoath07.rebox
@@ -27,8 +27,3 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "2"
         SUPPORTS_MACCATALYST: NO
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
