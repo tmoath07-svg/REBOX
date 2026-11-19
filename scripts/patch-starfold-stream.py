@@ -142,12 +142,12 @@ replace_once(
 stream_view = Path("StarfoldVendor/StarfoldiOS/Features/Stream/StreamView.swift")
 replace_once(
     stream_view,
-    "import SwiftUI\\n",
-    "import SwiftUI\\nimport UIKit\\n",
+    "import SwiftUI\n",
+    "import SwiftUI\nimport UIKit\n",
 )
 replace_once(
     stream_view,
-    "        .onAppear { appear() }\\n",
+    "        .onAppear { appear() }\n",
     """        .onAppear { appear() }
         .onChange(of: streamViewModel.isStreaming, initial: true) { _, isStreaming in
             UIApplication.shared.isIdleTimerDisabled = isStreaming
@@ -156,7 +156,7 @@ replace_once(
 )
 replace_once(
     stream_view,
-    "        .onDisappear { controllerHub.routeInput(toGame: false) }\\n",
+    "        .onDisappear { controllerHub.routeInput(toGame: false) }\n",
     """        .onDisappear {
             controllerHub.routeInput(toGame: false)
             UIApplication.shared.isIdleTimerDisabled = false
