@@ -136,4 +136,33 @@ replace_once(
 """,
 )
 
-print("Applied REBOX video-startup and background audio/input-routing patches.")
+# Keep the iPhone/iPad awake for the duration of a stream. This is the supported
+# way to keep GameController input live while the user watches on the console;
+# manually locking the device still allows iOS to suspend the app.
+stream_view = Path("StarfoldVendor/StarfoldiOS/Features/Stream/StreamView.swift")
+replace_once(
+    stream_view,
+    "import SwiftUI\\n",
+    "import SwiftUI\\nimport UIKit\\n",
+)
+replace_once(
+    stream_view,
+    "        .onAppear { appear() }\\n",
+    """        .onAppear { appear() }
+        .onChange(of: streamViewModel.isStreaming, initial: true) { _, isStreaming in
+            UIApplication.shared.isIdleTimerDisabled = isStreaming
+        }
+""",
+)
+replace_once(
+    stream_view,
+    "        .onDisappear { controllerHub.routeInput(toGame: false) }\\n",
+    """        .onDisappear {
+            controllerHub.routeInput(toGame: false)
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
+""",
+)
+
+print("Applied REBOX video-startup, background audio, input-routing, and keep-awake patches.")
+
