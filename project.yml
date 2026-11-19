@@ -49,6 +49,9 @@ targets:
       properties:
         # Starfold reads this exact key from Bundle.main.infoDictionary.
         StarfoldMicrosoftClientID: "1f907974-e22b-4810-a9de-d9647380c97e"
+        # Required for AVAudioSession playback to continue after screen lock.
+        UIBackgroundModes:
+          - audio
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tmoath07.rebox
