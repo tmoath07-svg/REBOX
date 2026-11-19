@@ -21,6 +21,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Patch Starfold WebRTC startup
+        run: python3 scripts/patch-starfold-stream.py
+
       - name: Select Xcode
         run: |
           xcodebuild -version
