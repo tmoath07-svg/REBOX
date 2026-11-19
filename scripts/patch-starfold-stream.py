@@ -164,5 +164,26 @@ replace_once(
 """,
 )
 
+# Bound every Xbox GSSV HTTP request so a stalled request cannot leave the UI
+# indefinitely showing "Connecting". Polling loops retain their own overall deadlines.
+gssv_client = Path("StarfoldVendor/Packages/XboxKit/Sources/XboxKit/Streaming/GSSVClient.swift")
+replace_once(
+    gssv_client,
+    """            let response = try await httpClient.send(
+                .init(url: url, method: method, headers: headers, body: body)
+            )
+""",
+    """            let response = try await httpClient.send(
+                .init(
+                    url: url,
+                    method: method,
+                    headers: headers,
+                    body: body,
+                    timeout: .seconds(20)
+                )
+            )
+""",
+)
+
 print("Applied REBOX video-startup, background audio, input-routing, and keep-awake patches.")
 
