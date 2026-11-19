@@ -56,6 +56,13 @@ jobs:
           test "$CLIENT_ID" = "1f907974-e22b-4810-a9de-d9647380c97e"
           echo "Microsoft OAuth client ID is present in the built app."
 
+      - name: Verify iOS background audio capability
+        run: |
+          APP_PLIST="build/Simulator/Build/Products/Debug-iphonesimulator/REBOX.app/Info.plist"
+          BACKGROUND_MODE=$(/usr/libexec/PlistBuddy -c "Print :UIBackgroundModes:0" "$APP_PLIST")
+          test "$BACKGROUND_MODE" = "audio"
+          echo "iOS background audio mode is enabled."
+
       - name: Package simulator app
         run: |
           APP_PATH="build/Simulator/Build/Products/Debug-iphonesimulator/REBOX.app"
