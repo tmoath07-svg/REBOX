@@ -25,8 +25,8 @@ def replace_once(path: Path, old: str, new: str) -> None:
 # Request the first video keyframe as soon as the video receiver is attached.
 replace_once(
     event,
-    "    case channelClosed(DataChannelLabel)\\n    case mediaTracksReady\\n",
-    "    case channelClosed(DataChannelLabel)\\n    case videoTrackReady\\n    case mediaTracksReady\\n",
+    "    case channelClosed(DataChannelLabel)\n    case mediaTracksReady\n",
+    "    case channelClosed(DataChannelLabel)\n    case videoTrackReady\n    case mediaTracksReady\n",
 )
 
 replace_once(
