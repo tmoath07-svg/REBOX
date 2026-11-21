@@ -15,6 +15,8 @@ struct REBOXTVApp: App {
 
 struct TVTranslatorView: View {
     @StateObject private var bridge = SubtitleBridge()
+    @StateObject private var camera = GameCameraScanner()
+    @State private var liveCameraEnabled = false
     @State private var input = ""
     @State private var requested = ""
     @State private var translationConfiguration: TranslationSession.Configuration?
@@ -58,7 +60,31 @@ struct TVTranslatorView: View {
                         }
                     }
 
-                    card("الترجمة") {
+                    card("ترجمة مباشرة بدون نسخ ولصق") {
+                        Toggle("قراءة نص اللعبة بالكاميرا تلقائيًا", isOn: $liveCameraEnabled)
+                            .tint(accent)
+                        if liveCameraEnabled {
+                            GameCameraPreview(scanner: camera)
+                                .frame(height: 220)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .overlay(alignment: .bottom) {
+                                    Text("وجّه الثلث السفلي من الكاميرا نحو سطر الترجمة في التلفزيون")
+                                        .font(.caption)
+                                        .padding(8)
+                                        .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 8))
+                                        .padding(8)
+                                }
+                            Text(camera.info).font(.caption).foregroundStyle(.secondary)
+                            Button("إيقاف القراءة وإخفاء آخر ترجمة") {
+                                liveCameraEnabled = false
+                                bridge.subtitle = ""
+                            }.font(.caption).foregroundStyle(accent)
+                        }
+                        Text("تستخدم كاميرا الجهاز وApple Vision للقراءة وApple Translation للترجمة. لا يحتاج اشتراكًا أو مفتاح API. خلك فاتح التطبيق؛ ما يقدر يقرأ HDMI من دون كاميرا أو بث.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+
+                    card("الترجمة اليدوية والصور") {
                         TextEditor(text: $input)
                             .scrollContentBackground(.hidden)
                             .frame(height: 110)
@@ -110,7 +136,7 @@ struct TVTranslatorView: View {
                             }.foregroundStyle(accent)
                         }
                     }
-                    Text("هذا إصدار أولي مجاني: يدعم إدخال النص واستخراجه من الصور وترجمته وإرساله لشاشة استقبال. لا يحتوي حاليًا على التقاط مباشر لصوت أو صورة ألعاب الكونسول.")
+                    Text("إصدار مجاني تجريبي: استخراج آلي من كاميرا الجوال، ترجمة محلية، وإرسال ترجمات لمتصفح LG. عرض HDMI داخل المتصفح يعتمد على موديل التلفزيون ولا يضمن النجاح.")
                         .font(.caption).foregroundStyle(.secondary)
                         .padding(.bottom, 18)
                 }.padding(16)
@@ -131,6 +157,20 @@ struct TVTranslatorView: View {
             } catch {
                 await MainActor.run { bridge.message = "تعذرت الترجمة: \(error.localizedDescription)" }
             }
+        }
+        .onAppear {
+            camera.onStableText = { text in
+                guard liveCameraEnabled else { return }
+                input = text
+                translateInput()
+            }
+        }
+        .onDisappear {
+            camera.stop()
+        }
+        .onChange(of: liveCameraEnabled) { _, enabled in
+            if enabled { camera.start() }
+            else { camera.stop() }
         }
         .onChange(of: selectedImage) { _, photo in
             guard let photo else { return }
