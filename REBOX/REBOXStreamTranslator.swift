@@ -2,7 +2,7 @@ import Combine
 import CoreGraphics
 import StreamKit
 import SwiftUI
-import Translation
+@preconcurrency import Translation
 import UIKit
 import Vision
 
@@ -86,7 +86,7 @@ struct REBOXStreamTranslator: View {
                 translations[cacheKey(content)] = translated
                 if translations.count > 120 {
                     translations.removeAll()
-                    translations[cacheKey(content)] = result.targetText
+                    translations[cacheKey(content)] = translated
                 }
                 lastResult = "تمت ترجمة النص وإرساله إلى LG."
             } catch {
@@ -269,7 +269,7 @@ struct REBOXStreamTranslator: View {
 /// TranslationSession is scoped to a single SwiftUI translationTask invocation.
 /// This Sendable adapter is not shared between tasks; Apple owns the session lifecycle.
 private struct REBOXTranslationHandle: @unchecked Sendable {
-    let session: TranslationSession
+    nonisolated(unsafe) let session: TranslationSession
 
     nonisolated func prepare() async throws {
         try await session.prepareTranslation()
