@@ -11,6 +11,10 @@ final class SubtitleBridge: ObservableObject {
     @Published var boxOpacity = 0.75 { didSet { publish() } }
     @Published var textColor = "#55D6FF" { didSet { publish() } }
     @Published var boxColor = "#101C2A" { didSet { publish() } }
+    // Zero means captions-only, avoiding black HDMI video on unsupported TVs.
+    @Published var hdmiInput = 0 { didSet { publish() } }
+    @Published var showTVControls = true { didSet { publish() } }
+    @Published var subtitleVisible = true { didSet { publish() } }
     @Published var message = "جاهز للإرسال"
     @Published var serverStatus = "جارٍ تشغيل السيرفر"
     @Published private(set) var listeningPort: UInt16?
@@ -46,7 +50,10 @@ final class SubtitleBridge: ObservableObject {
             "fontSize": Int(fontSize),
             "opacity": boxOpacity,
             "color": textColor,
-            "background": boxColor
+            "background": boxColor,
+            "hdmiInput": hdmiInput,
+            "showControls": showTVControls,
+            "showSubtitle": subtitleVisible
         ]
         if let data = try? JSONSerialization.data(withJSONObject: snapshot) {
             server.update(payload: data)
@@ -172,7 +179,10 @@ final class TVHTTPServer {
             let request = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
             let first = request.components(separatedBy: "\r\n").first ?? ""
             let parts = first.split(separator: " ")
-            let path = parts.count >= 2 ? String(parts[1]) : "/"
+            let rawPath = parts.count >= 2 ? String(parts[1]) : "/"
+            // Browser cache-busting queries such as /state?fresh=123 must not produce 404.
+            let path = String(rawPath.split(separator: "?", maxSplits: 1,
+                                            omittingEmptySubsequences: false).first ?? Substring("/"))
             switch path {
             case "/state":
                 self.respond(connection, data: self.getState(), mime: "application/json; charset=utf-8")
@@ -226,6 +236,7 @@ button.active,button:focus{background:#5ad7ff;color:#07151e;outline:2px solid wh
   </div>
   <button id="off">شاشة الترجمة فقط</button>
   <button id="hide">إخفاء القائمة</button>
+  <button id="fullscreen">ملء الشاشة (تجريبي)</button>
   <p id="status">جاري الاتصال بتطبيق الجوال...</p>
   <p id="tip">إذا لم تظهر صورة اللعبة، فهذه ميزة غير مدعومة على متصفح تلفزيونك. لا يلزم تغيير إعدادات النظام. اضغط OK لإظهار القائمة و Back لإخفائها.</p>
 </div>
@@ -271,7 +282,12 @@ button.active,button:focus{background:#5ad7ff;color:#07151e;outline:2px solid wh
       try {
         var s=JSON.parse(xhr.responseText);
         cap.textContent=String(s.subtitle||"");
-        cap.style.display=cap.textContent?"block":"none";
+        cap.style.display=(cap.textContent&&s.showSubtitle!==false)?"block":"none";
+        var wanted=Number(s.hdmiInput||0);
+        if(wanted!==current && wanted>=0 && wanted<=4)choose(wanted);
+        if(typeof s.showControls==="boolean") {
+          panel.style.display=s.showControls?"block":"none";
+        }
         cap.style.top=Math.max(0,Math.min(90,Number(s.position)||75))+"%";
         cap.style.fontSize=Math.max(16,Math.min(70,Number(s.fontSize)||25))+"pt";
         cap.style.color=/^#[0-9a-f]{6}$/i.test(s.color||"")?s.color:"#fff";
@@ -291,6 +307,18 @@ button.active,button:focus{background:#5ad7ff;color:#07151e;outline:2px solid wh
   });
   document.getElementById("off").addEventListener("click",function(){choose(0);});
   document.getElementById("hide").addEventListener("click",function(){panel.style.display="none";});
+  document.getElementById("fullscreen").addEventListener("click",function(){
+    var root=document.documentElement;
+    var request=root.requestFullscreen||root.webkitRequestFullscreen;
+    if(request){
+      try{
+        var result=request.call(root);
+        if(result&&result.catch)result.catch(function(){msg.textContent="LG لم يسمح بوضع ملء الشاشة";});
+      } catch(error){msg.textContent="LG لم يسمح بوضع ملء الشاشة";}
+    }else{
+      msg.textContent="متصفح LG لا يدعم ملء الشاشة عبر الصفحة";
+    }
+  });
   document.addEventListener("keydown",function(e){
     if(e.keyCode===461||e.key==="Escape"||e.key==="Backspace"){panel.style.display="none";e.preventDefault();}
     else if((e.key==="Enter"||e.keyCode===13)&&panel.style.display==="none"){panel.style.display="block";e.preventDefault();}
