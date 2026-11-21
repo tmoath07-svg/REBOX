@@ -17,10 +17,8 @@
     <true/>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
-    <key>NSCameraUsageDescription</key>
-    <string>REBOX uses video streaming capabilities to display your Xbox gameplay.</string>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>REBOX connects to your Xbox console on the local network for Remote Play.</string>
+    <string>REBOX connects to Xbox Remote Play and can send Arabic subtitles to your LG TV on the local network.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>REBOX can use the microphone for in-game voice chat while streaming.</string>
     <key>StarfoldMicrosoftClientID</key>
