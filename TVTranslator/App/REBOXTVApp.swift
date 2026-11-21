@@ -15,8 +15,6 @@ struct REBOXTVApp: App {
 
 struct TVTranslatorView: View {
     @StateObject private var bridge = SubtitleBridge()
-    @StateObject private var camera = GameCameraScanner()
-    @State private var liveCameraEnabled = false
     @State private var translationCache: [String: String] = [:]
     @State private var input = ""
     @State private var requested = ""
@@ -24,9 +22,10 @@ struct TVTranslatorView: View {
     @State private var selectedImage: PhotosPickerItem?
     @State private var page = 0
     @State private var selectedConsole = "Xbox"
-    @State private var ocrRegion = CGRect(x: 0.14, y: 0.73, width: 0.72, height: 0.18)
-    @State private var cameraZoom = 1.0
-    @State private var cropIsEditable = true
+    @State private var sourceLanguage = "en"
+    @State private var targetLanguage = "ar"
+    @State private var prepareOnly = false
+    @State private var languageMessage = "اضغط تجهيز اللغات؛ تنزيل الحزم مجاني ويتم بموافقتك."
 
     private let accent = Color(red: 0.38, green: 0.82, blue: 1)
     private let surface = Color(red: 0.10, green: 0.12, blue: 0.18)
@@ -108,55 +107,52 @@ struct TVTranslatorView: View {
                         }
                     }
 
-                    card("ترجمة مباشرة بدون نسخ ولصق") {
-                        Toggle("قراءة نص اللعبة بالكاميرا تلقائيًا", isOn: $liveCameraEnabled)
-                            .tint(accent)
-                        if liveCameraEnabled {
-                            ZStack {
-                                GameCameraPreview(scanner: camera)
-                                    .aspectRatio(3.0 / 4.0, contentMode: .fit)
-                                    .background(Color.black)
-                                if cropIsEditable {
-                                    OCRCropEditor(region: $ocrRegion)
-                                        .aspectRatio(3.0 / 4.0, contentMode: .fit)
-                                }
+                    card("ترجمة بث الكونسول — بدون كاميرا") {
+                        Label("القراءة المباشرة تكون من إطارات Xbox Remote Play داخل REBOX", systemImage: "gamecontroller.fill")
+                            .foregroundStyle(accent)
+                        Text("بنبني الالتقاط داخل مشغل Xbox الموجود بمشروع REBOX. هذا التطبيق يستقبل الترجمة ويرسلها للتلفزيون؛ ما يحتاج صلاحية كاميرا.")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        Text("PlayStation يتطلب ربط بث منفصل، وما بنعرضه على أنه شغال قبل الاختبار.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+
+                    card("لغات الترجمة — مجانية") {
+                        HStack(spacing: 10) {
+                            VStack(alignment: .leading) {
+                                Text("من").font(.caption)
+                                Picker("اللغة المصدر", selection: $sourceLanguage) {
+                                    Text("English").tag("en")
+                                    Text("Deutsch").tag("de")
+                                    Text("Français").tag("fr")
+                                    Text("Español").tag("es")
+                                    Text("العربية").tag("ar")
+                                }.pickerStyle(.menu)
                             }
-                            .aspectRatio(3.0 / 4.0, contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            HStack {
-                                Button(cropIsEditable ? "إنهاء تحديد OCR" : "تعديل مربع OCR") {
-                                    cropIsEditable.toggle()
-                                }
-                                Spacer()
-                                Button("ضبط على النص أسفل الشاشة") {
-                                    ocrRegion = CGRect(x: 0.14, y: 0.73, width: 0.72, height: 0.18)
-                                }
+                            Spacer()
+                            Image(systemName: "arrow.left.right").foregroundStyle(accent)
+                            Spacer()
+                            VStack(alignment: .leading) {
+                                Text("إلى").font(.caption)
+                                Picker("اللغة المستهدفة", selection: $targetLanguage) {
+                                    Text("العربية").tag("ar")
+                                    Text("English").tag("en")
+                                    Text("Deutsch").tag("de")
+                                    Text("Français").tag("fr")
+                                    Text("Español").tag("es")
+                                }.pickerStyle(.menu)
                             }
-                            .font(.caption).foregroundStyle(accent)
-                            slider("تكبير الكاميرا", $cameraZoom, 1...4, "×")
-                            slider("عرض المربع", Binding(
-                                get: { Double(ocrRegion.width) },
-                                set: { newWidth in
-                                    let width = CGFloat(newWidth)
-                                    ocrRegion.size.width = width
-                                    ocrRegion.origin.x = min(ocrRegion.origin.x, 1 - width)
-                                }), 0.14...1.0, "")
-                            slider("ارتفاع المربع", Binding(
-                                get: { Double(ocrRegion.height) },
-                                set: { newHeight in
-                                    let height = CGFloat(newHeight)
-                                    ocrRegion.size.height = height
-                                    ocrRegion.origin.y = min(ocrRegion.origin.y, 1 - height)
-                                }), 0.07...0.75, "")
-                            Text("اسحب المربع الأزرق أو زواياه الأربع لتحديد النص المطلوب، مثل الصورة اللي أرسلتها.")
-                                .font(.caption).foregroundStyle(.secondary)
-                            Text(camera.info).font(.caption).foregroundStyle(.secondary)
-                            Button("إيقاف القراءة وإخفاء آخر ترجمة") {
-                                liveCameraEnabled = false
-                                bridge.subtitle = ""
-                            }.font(.caption).foregroundStyle(accent)
                         }
-                        Text("تستخدم كاميرا الجهاز وApple Vision للقراءة وApple Translation للترجمة. لا يحتاج اشتراكًا أو مفتاح API. خلك فاتح التطبيق؛ ما يقدر يقرأ HDMI من دون كاميرا أو بث.")
+                        Button {
+                            prepareLanguages()
+                        } label: {
+                            Label("تجهيز / تنزيل لغات الترجمة مجانًا", systemImage: "arrow.down.circle")
+                                .frame(maxWidth: .infinity).padding(9)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(accent)
+                        .foregroundStyle(.black)
+                        Text(languageMessage).font(.caption).foregroundStyle(.secondary)
+                        Text("إذا كانت اللغات غير مثبتة، بيظهر طلب Apple للموافقة على تنزيلها. ما يحتاج اشتراك.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
 
@@ -212,7 +208,7 @@ struct TVTranslatorView: View {
                             }.foregroundStyle(accent)
                         }
                     }
-                    Text("إصدار مجاني تجريبي: استخراج آلي من كاميرا الجوال، ترجمة محلية، وإرسال ترجمات لمتصفح LG. عرض HDMI داخل المتصفح يعتمد على موديل التلفزيون ولا يضمن النجاح.")
+                    Text("إصدار مجاني بلا كاميرا. الترجمة الآلية من بث Xbox تحتاج تشغيل ميزة قراءة الإطارات داخل مشغل REBOX. عرض HDMI داخل متصفح LG يعتمد على موديل التلفزيون.")
                         .font(.caption).foregroundStyle(.secondary)
                         .padding(.bottom, 18)
                 }.padding(16)
@@ -222,46 +218,38 @@ struct TVTranslatorView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .translationTask(translationConfiguration) { session in
-            let text = requested
-            guard !text.isEmpty else { return }
             do {
-                let answer = try await session.translate(text)
+                // Apple requests permission and downloads missing languages in-app.
+                // Explicit source/target are required for prepareTranslation().
+                if prepareOnly {
+                    try await session.prepareTranslation()
+                    await MainActor.run {
+                        languageMessage = "اللغات جاهزة للاستخدام، أو بدأ تنزيلها بموافقتك."
+                        prepareOnly = false
+                    }
+                    return
+                }
+
+                let text = requested
+                guard !text.isEmpty else { return }
+                let response = try await session.translate(text)
                 await MainActor.run {
                     guard requested == text else { return }
-                    bridge.subtitle = answer.targetText
-                    translationCache[text] = answer.targetText
-                    if translationCache.count > 120 {
-                        translationCache.removeAll()
-                        translationCache[text] = answer.targetText
-                    }
+                    bridge.subtitle = response.targetText
+                    translationCache[translationKey(text)] = response.targetText
+                    if translationCache.count > 120 { translationCache.removeAll() }
                     bridge.message = "تمت الترجمة والإرسال"
                 }
             } catch {
-                await MainActor.run { bridge.message = "تعذرت الترجمة: \(error.localizedDescription)" }
+                await MainActor.run {
+                    prepareOnly = false
+                    languageMessage = "تعذر تجهيز اللغات: \(error.localizedDescription)"
+                    bridge.message = "الترجمة غير متاحة حاليًا: تأكد من دعم اللغات أو جهزها من الزر أعلاه."
+                }
             }
         }
-        .onAppear {
-            camera.setRegion(ocrRegion)
-            camera.setZoom(cameraZoom)
-            camera.onStableText = { text in
-                guard liveCameraEnabled else { return }
-                input = text
-                translateInput()
-            }
-        }
-        .onDisappear {
-            camera.stop()
-        }
-        .onChange(of: ocrRegion) { _, next in
-            camera.setRegion(next)
-        }
-        .onChange(of: cameraZoom) { _, next in
-            camera.setZoom(next)
-        }
-        .onChange(of: liveCameraEnabled) { _, enabled in
-            if enabled { camera.start() }
-            else { camera.stop() }
-        }
+        .onChange(of: sourceLanguage) { _, _ in resetLanguageSession() }
+        .onChange(of: targetLanguage) { _, _ in resetLanguageSession() }
         .onChange(of: selectedImage) { _, photo in
             guard let photo else { return }
             Task {
@@ -351,19 +339,50 @@ struct TVTranslatorView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { bridge.message = "اكتب النص أولًا"; return }
         requested = text
-        if let cached = translationCache[text] {
+        if let cached = translationCache[translationKey(text)] {
             bridge.subtitle = cached
             bridge.message = "تم استخدام ترجمة محفوظة محليًا"
             return
         }
         bridge.message = "جاري استخدام ترجمة Apple"
-        if translationConfiguration == nil {
-            translationConfiguration = TranslationSession.Configuration(
-                source: Locale.Language(identifier: "en"),
-                target: Locale.Language(identifier: "ar")
-            )
-        } else {
+        runLanguageTask()
+
+    }
+
+    private func translationKey(_ text: String) -> String {
+        "\(sourceLanguage):\(targetLanguage):\(text)"
+    }
+
+    private func resetLanguageSession() {
+        translationConfiguration = nil
+        prepareOnly = false
+        languageMessage = "اضغط تجهيز اللغات لاستخدام هذا الزوج."
+    }
+
+    private func prepareLanguages() {
+        guard sourceLanguage != targetLanguage else {
+            languageMessage = "اختر لغتين مختلفتين."
+            return
+        }
+        prepareOnly = true
+        languageMessage = "جارٍ فحص زوج اللغات وطلب التنزيل عند الحاجة..."
+        runLanguageTask()
+    }
+
+    private func runLanguageTask() {
+        guard sourceLanguage != targetLanguage else {
+            bridge.message = "اختر لغتين مختلفتين."
+            return
+        }
+        if let config = translationConfiguration,
+           config.source?.languageCode?.identifier == sourceLanguage,
+           config.target?.languageCode?.identifier == targetLanguage {
             translationConfiguration?.invalidate()
+        } else {
+            translationConfiguration = TranslationSession.Configuration(
+                source: Locale.Language(identifier: sourceLanguage),
+                target: Locale.Language(identifier: targetLanguage)
+            )
         }
     }
 
