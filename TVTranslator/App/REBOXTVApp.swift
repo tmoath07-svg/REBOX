@@ -17,6 +17,7 @@ struct TVTranslatorView: View {
     @StateObject private var bridge = SubtitleBridge()
     @StateObject private var camera = GameCameraScanner()
     @State private var liveCameraEnabled = false
+    @State private var translationCache: [String: String] = [:]
     @State private var input = ""
     @State private var requested = ""
     @State private var translationConfiguration: TranslationSession.Configuration?
@@ -151,7 +152,13 @@ struct TVTranslatorView: View {
             do {
                 let answer = try await session.translate(text)
                 await MainActor.run {
+                    guard requested == text else { return }
                     bridge.subtitle = answer.targetText
+                    translationCache[text] = answer.targetText
+                    if translationCache.count > 120 {
+                        translationCache.removeAll()
+                        translationCache[text] = answer.targetText
+                    }
                     bridge.message = "تمت الترجمة والإرسال"
                 }
             } catch {
@@ -222,6 +229,11 @@ struct TVTranslatorView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { bridge.message = "اكتب النص أولًا"; return }
         requested = text
+        if let cached = translationCache[text] {
+            bridge.subtitle = cached
+            bridge.message = "تم استخدام ترجمة محفوظة محليًا"
+            return
+        }
         bridge.message = "جاري استخدام ترجمة Apple"
         if translationConfiguration == nil {
             translationConfiguration = TranslationSession.Configuration(
