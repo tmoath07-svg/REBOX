@@ -12,7 +12,8 @@ final class SubtitleBridge: ObservableObject {
     @Published var textColor = "#55D6FF" { didSet { publish() } }
     @Published var boxColor = "#101C2A" { didSet { publish() } }
     // Zero means captions-only, avoiding black HDMI video on unsupported TVs.
-    @Published var hdmiInput = 0 { didSet { publish() } }
+    @Published var hdmiInput = 0 { didSet { hdmiRevision += 1; publish() } }
+    private var hdmiRevision = 0
     @Published var showTVControls = true { didSet { publish() } }
     @Published var subtitleVisible = true { didSet { publish() } }
     @Published var message = "جاهز للإرسال"
@@ -52,6 +53,7 @@ final class SubtitleBridge: ObservableObject {
             "color": textColor,
             "background": boxColor,
             "hdmiInput": hdmiInput,
+            "hdmiRevision": hdmiRevision,
             "showControls": showTVControls,
             "showSubtitle": subtitleVisible
         ]
@@ -248,6 +250,8 @@ button.active,button:focus{background:#5ad7ff;color:#07151e;outline:2px solid wh
   var panel=document.getElementById("settings");
   var video=document.getElementById("video");
   var current=0;
+  var lastHDMIRevision=-1;
+  var lastRemoteControls=null;
   function choose(port) {
     current=port;
     var buttons=document.querySelectorAll("[data-hdmi]");
@@ -283,10 +287,15 @@ button.active,button:focus{background:#5ad7ff;color:#07151e;outline:2px solid wh
         var s=JSON.parse(xhr.responseText);
         cap.textContent=String(s.subtitle||"");
         cap.style.display=(cap.textContent&&s.showSubtitle!==false)?"block":"none";
-        var wanted=Number(s.hdmiInput||0);
-        if(wanted!==current && wanted>=0 && wanted<=4)choose(wanted);
-        if(typeof s.showControls==="boolean") {
+        var revision=Number(s.hdmiRevision||0);
+        if(revision!==lastHDMIRevision){
+          var wanted=Number(s.hdmiInput||0);
+          if(wanted!==current && wanted>=0 && wanted<=4)choose(wanted);
+          lastHDMIRevision=revision;
+        }
+        if(typeof s.showControls==="boolean" && s.showControls!==lastRemoteControls) {
           panel.style.display=s.showControls?"block":"none";
+          lastRemoteControls=s.showControls;
         }
         cap.style.top=Math.max(0,Math.min(90,Number(s.position)||75))+"%";
         cap.style.fontSize=Math.max(16,Math.min(70,Number(s.fontSize)||25))+"pt";
