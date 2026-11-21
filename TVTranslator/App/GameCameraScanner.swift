@@ -21,6 +21,35 @@ final class GameCameraScanner: NSObject, ObservableObject, AVCaptureVideoDataOut
     private var recentText = ""
     private var stableHits = 0
     private var sentText = ""
+    private let roiLock = NSLock()
+    private var selectedVisionROI = CGRect(x: 0.14, y: 0.10, width: 0.72, height: 0.18)
+    private var captureDevice: AVCaptureDevice?
+
+    /// UI crop is top-left-origin; Vision OCR expects bottom-left-origin.
+    func setRegion(_ previewRect: CGRect) {
+        let left = max(0, min(1, previewRect.minX))
+        let top = max(0, min(1, previewRect.minY))
+        let width = max(0.05, min(1 - left, previewRect.width))
+        let height = max(0.05, min(1 - top, previewRect.height))
+        let vision = CGRect(x: left, y: max(0, 1 - top - height), width: width, height: height)
+        roiLock.lock()
+        selectedVisionROI = vision
+        roiLock.unlock()
+    }
+
+    func setZoom(_ value: Double) {
+        captureQueue.async { [weak self] in
+            guard let device = self?.captureDevice else { return }
+            do {
+                try device.lockForConfiguration()
+                let maximum = min(4.0, device.activeFormat.videoMaxZoomFactor)
+                device.videoZoomFactor = min(max(1.0, CGFloat(value)), maximum)
+                device.unlockForConfiguration()
+            } catch {
+                DispatchQueue.main.async { self?.info = "تعذر تعديل تكبير الكاميرا" }
+            }
+        }
+    }
 
     func start() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -53,6 +82,7 @@ final class GameCameraScanner: NSObject, ObservableObject, AVCaptureVideoDataOut
                     return
                 }
                 self.session.addInput(input)
+                self.captureDevice = device
                 let output = AVCaptureVideoDataOutput()
                 output.alwaysDiscardsLateVideoFrames = true
                 output.setSampleBufferDelegate(self, queue: self.visionQueue)
@@ -98,7 +128,9 @@ final class GameCameraScanner: NSObject, ObservableObject, AVCaptureVideoDataOut
         request.recognitionLanguages = ["en-US"]
         request.usesLanguageCorrection = true
         // Focus on the lower part of the camera image, where games normally render subtitles.
-        request.regionOfInterest = CGRect(x: 0.04, y: 0.02, width: 0.92, height: 0.52)
+        roiLock.lock()
+        request.regionOfInterest = selectedVisionROI
+        roiLock.unlock()
 
         do {
             try VNImageRequestHandler(cvPixelBuffer: pixels, orientation: .right, options: [:]).perform([request])
@@ -140,7 +172,7 @@ struct GameCameraPreview: UIViewRepresentable {
     func makeUIView(context: Context) -> PreviewSurface {
         let view = PreviewSurface()
         view.cameraLayer.session = scanner.session
-        view.cameraLayer.videoGravity = .resizeAspectFill
+        view.cameraLayer.videoGravity = .resizeAspect
         return view
     }
 
