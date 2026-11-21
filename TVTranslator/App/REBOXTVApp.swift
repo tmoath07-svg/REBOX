@@ -61,6 +61,14 @@ struct TVTranslatorView: View {
                     if page == 0 {
                         card("اتصال التلفزيون") {
                             Label(bridge.serverStatus, systemImage: "wifi").foregroundStyle(accent)
+                            HStack(spacing: 7) {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(bridge.tvRecentlyConnected ? Color.green : Color.orange)
+                                Text(bridge.tvRecentlyConnected ? "متصل بمتصفح التلفزيون ويستقبل الترجمة" : "لم يصل طلب من متصفح التلفزيون بعد")
+                                    .font(.subheadline)
+                                    .foregroundStyle(bridge.tvRecentlyConnected ? Color.green : Color.orange)
+                            }
                             Text("افتح هذا الرابط بمتصفح التلفزيون على نفس الواي فاي")
                                 .font(.subheadline)
                             Text(bridge.tvURL)
