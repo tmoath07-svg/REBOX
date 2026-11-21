@@ -1,0 +1,35 @@
+name: Build REBOX TV LG webOS Receiver
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/tv-translator-free-v1
+    paths:
+      - "TVTranslator/LGwebOS/**"
+      - ".github/workflows/tv-lg-webos.yml"
+  pull_request:
+    paths:
+      - "TVTranslator/LGwebOS/**"
+      - ".github/workflows/tv-lg-webos.yml"
+jobs:
+  lg-webos-ipk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install webOS CLI
+        run: npm install --global @webos-tools/cli@3.2.6
+      - name: Package IPK
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          ares-package --no-minify TVTranslator/LGwebOS -o out
+          ls -lah out
+          test "$(find out -maxdepth 1 -type f -name '*.ipk' | wc -l)" -ge 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: REBOX-TV-LG-webOS-IPK
+          path: out/*.ipk
+          if-no-files-found: error

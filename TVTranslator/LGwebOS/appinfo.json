@@ -1,0 +1,14 @@
+{
+  "id": "com.tmoath07.reboxtv.lg",
+  "version": "0.1.0",
+  "vendor": "REBOX",
+  "type": "web",
+  "main": "index.html",
+  "title": "REBOX TV LG",
+  "icon": "icon.png",
+  "resolution": "1920x1080",
+  "transparent": true,
+  "defaultWindowType": "overlay",
+  "disableBackHistoryAPI": true,
+  "appDescription": "Free Arabic TV captions over compatible LG inputs"
+}

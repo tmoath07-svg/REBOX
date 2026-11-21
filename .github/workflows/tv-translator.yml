@@ -1,0 +1,43 @@
+name: Build REBOX TV Translator
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/tv-translator-free-v1
+    paths:
+      - "TVTranslator/**"
+      - ".github/workflows/tv-translator.yml"
+  pull_request:
+    paths:
+      - "TVTranslator/**"
+      - ".github/workflows/tv-translator.yml"
+concurrency:
+  group: rebox-tv-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  unsigned-ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: TVTranslator
+        run: xcodegen generate
+      - name: Build unsigned iPhone and iPad application
+        working-directory: TVTranslator
+        run: |
+          set -euo pipefail
+          xcodebuild -project REBOXTV.xcodeproj -scheme REBOXTV -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+          test -d build/Build/Products/Release-iphoneos/REBOXTV.app
+          mkdir -p out/Payload
+          cp -R build/Build/Products/Release-iphoneos/REBOXTV.app out/Payload/
+          cd out
+          zip -qry REBOX-TV-unsigned.ipa Payload
+          test -s REBOX-TV-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: REBOX-TV-unsigned-IPA
+          path: TVTranslator/out/REBOX-TV-unsigned.ipa
+          if-no-files-found: error
