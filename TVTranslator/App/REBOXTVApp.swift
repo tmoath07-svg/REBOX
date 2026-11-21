@@ -217,7 +217,7 @@ struct TVTranslatorView: View {
                         .padding(.bottom, 18)
                 }.padding(16)
             }
-            .background(Color(red: 0.035, green: 0.045, blue: 0.07))
+            .background(REBOXGalaxyBackground())
             .navigationTitle("REBOX TV")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -394,5 +394,40 @@ extension Color {
                   green: Double((value >> 8) & 255) / 255,
                   blue: Double(value & 255) / 255,
                   opacity: 1)
+    }
+}
+
+private struct REBOXGalaxyBackground: View {
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.020, green: 0.035, blue: 0.069),
+                        Color(red: 0.032, green: 0.044, blue: 0.098),
+                        Color(red: 0.012, green: 0.023, blue: 0.050)
+                    ],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
+                RadialGradient(
+                    colors: [Color.blue.opacity(0.24), .clear],
+                    center: UnitPoint(x: 0.78, y: 0.32),
+                    startRadius: 4, endRadius: 330
+                )
+                ForEach(0..<75, id: \.self) { index in
+                    let dotSize: CGFloat = index.isMultiple(of: 9) ? 2.6 : 1.1
+                    Circle()
+                        .fill(Color.white.opacity(0.12 + Double(index % 5) * 0.08))
+                        .frame(width: dotSize, height: dotSize)
+                        .position(
+                            x: geo.size.width * CGFloat((index * 43 + 11) % 97) / 97,
+                            y: geo.size.height * CGFloat((index * 31 + 19) % 101) / 101
+                        )
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }
