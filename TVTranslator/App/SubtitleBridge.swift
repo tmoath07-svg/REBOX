@@ -13,13 +13,27 @@ final class SubtitleBridge: ObservableObject {
     @Published var boxColor = "#101C2A" { didSet { publish() } }
     @Published var message = "جاهز للإرسال"
     @Published var serverStatus = "جارٍ تشغيل السيرفر"
+    @Published private(set) var listeningPort: UInt16?
 
     let server = TVHTTPServer()
-    var tvURL: String { "http://\(LANAddress.ipv4()):8080/tv" }
+
+    // The port may change if another process is already using 8080.
+    // Only advertise a URL after the listener has actually reached .ready.
+    var tvURL: String {
+        guard let listeningPort else { return "الرابط بيظهر بعد اتصال الخادم" }
+        return "http://\(LANAddress.ipv4()):\(listeningPort)/tv"
+    }
+
+    var canShareURL: Bool {
+        listeningPort != nil && LANAddress.ipv4() != "IP-الجهاز"
+    }
 
     init() {
         server.onStatus = { [weak self] message in
             Task { @MainActor in self?.serverStatus = message }
+        }
+        server.onListeningPort = { [weak self] port in
+            Task { @MainActor in self?.listeningPort = port }
         }
         server.start()
         publish()
@@ -64,8 +78,10 @@ enum LANAddress {
 
 final class TVHTTPServer {
     var onStatus: ((String) -> Void)?
+    var onListeningPort: ((UInt16?) -> Void)?
     private let queue = DispatchQueue(label: "rebox.tv.network", qos: .utility)
     private var listener: NWListener?
+    private var attemptedAutomaticPort = false
     private let lock = NSLock()
     private var stateData = Data("{}".utf8)
 
@@ -82,26 +98,71 @@ final class TVHTTPServer {
     }
 
     func start() {
+        guard listener == nil else { return }
+        listen(on: NWEndpoint.Port(rawValue: 8080)!)
+    }
+
+    // First try the familiar :8080 URL. If it is occupied (POSIX 48),
+    // ask Network.framework to choose a free port instead of crashing.
+    private func listen(on port: NWEndpoint.Port) {
         do {
-            let newListener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: 8080)!)
-            listener = newListener
-            newListener.stateUpdateHandler = { [weak self] state in
-                let text: String
+            let candidate = try NWListener(using: .tcp, on: port)
+            listener = candidate
+            candidate.stateUpdateHandler = { [weak self, weak candidate] state in
+                guard let self, let candidate, self.listener === candidate else { return }
+
                 switch state {
-                case .ready: text = "متصل: خادم الترجمة على المنفذ 8080"
-                case .failed(let error): text = "تعطل الخادم: \(error.localizedDescription)"
-                case .waiting(let error): text = "بانتظار الشبكة: \(error.localizedDescription)"
-                default: return
+                case .ready:
+                    guard let openedPort = candidate.port?.rawValue else {
+                        self.report("تعذر معرفة منفذ الخادم")
+                        return
+                    }
+                    self.report("الخادم يعمل على المنفذ \(openedPort)", port: openedPort)
+
+                case .waiting(let error):
+                    if case .posix(let code) = error, code == .EADDRINUSE {
+                        self.handleFailure(error)
+                    } else {
+                        self.report("بانتظار الشبكة: \(error.localizedDescription)")
+                    }
+
+                case .failed(let error):
+                    self.handleFailure(error)
+
+                default:
+                    break
                 }
-                DispatchQueue.main.async { self?.onStatus?(text) }
             }
-            newListener.newConnectionHandler = { [weak self] connection in
+            candidate.newConnectionHandler = { [weak self] connection in
                 self?.accept(connection)
             }
-            newListener.start(queue: queue)
+            candidate.start(queue: queue)
         } catch {
-            onStatus?("تعذر فتح المنفذ: \(error.localizedDescription)")
+            handleFailure(error)
         }
+    }
+
+    private func handleFailure(_ error: Error) {
+        listener?.cancel()
+        listener = nil
+        if !attemptedAutomaticPort {
+            attemptedAutomaticPort = true
+            report("المنفذ 8080 مشغول، جارٍ اختيار منفذ مجاني متاح...")
+            listen(on: .any)
+        } else {
+            report("تعذر تشغيل الخادم: \(error.localizedDescription)")
+        }
+    }
+
+    private func report(_ status: String, port: UInt16? = nil) {
+        DispatchQueue.main.async { [weak self] in
+            self?.onListeningPort?(port)
+            self?.onStatus?(status)
+        }
+    }
+
+    deinit {
+        listener?.cancel()
     }
 
     private func accept(_ connection: NWConnection) {
