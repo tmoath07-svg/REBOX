@@ -11,6 +11,9 @@ on:
     paths:
       - "TVTranslator/**"
       - ".github/workflows/tv-translator.yml"
+concurrency:
+  group: rebox-tv-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   unsigned-ipa:
     runs-on: macos-15
