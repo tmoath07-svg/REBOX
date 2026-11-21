@@ -17,6 +17,7 @@ targets:
       path: Info.plist
       properties:
         CFBundleDisplayName: "REBOX TV"
+        NSCameraUsageDescription: "يستخدم REBOX الكاميرا لقراءة نصوص الألعاب وترجمتها محليًا بدون إرسال الصور للإنترنت."
         NSLocalNetworkUsageDescription: "إرسال الترجمات إلى التلفزيون المتصل بنفس شبكة الواي فاي."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
