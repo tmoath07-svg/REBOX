@@ -18,6 +18,9 @@ final class SubtitleBridge: ObservableObject {
     @Published var subtitleVisible = true { didSet { publish() } }
     @Published var message = "جاهز للإرسال"
     @Published var serverStatus = "جارٍ تشغيل السيرفر"
+    @Published private(set) var tvRecentlyConnected = false
+    private var lastTVPoll: Date?
+    private var connectionMonitor: Timer?
     @Published private(set) var listeningPort: UInt16?
 
     let server = TVHTTPServer()
@@ -39,6 +42,20 @@ final class SubtitleBridge: ObservableObject {
         }
         server.onListeningPort = { [weak self] port in
             Task { @MainActor in self?.listeningPort = port }
+        }
+        server.onReceiverPoll = { [weak self] in
+            Task { @MainActor in
+                self?.lastTVPoll = Date()
+                self?.tvRecentlyConnected = true
+            }
+        }
+        connectionMonitor = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.tvRecentlyConnected = self.lastTVPoll.map {
+                    Date().timeIntervalSince($0) < 7
+                } ?? false
+            }
         }
         server.start()
         publish()
@@ -88,6 +105,7 @@ enum LANAddress {
 final class TVHTTPServer {
     var onStatus: ((String) -> Void)?
     var onListeningPort: ((UInt16?) -> Void)?
+    var onReceiverPoll: (() -> Void)?
     private let queue = DispatchQueue(label: "rebox.tv.network", qos: .utility)
     private var listener: NWListener?
     private var attemptedAutomaticPort = false
@@ -187,6 +205,7 @@ final class TVHTTPServer {
                                             omittingEmptySubsequences: false).first ?? Substring("/"))
             switch path {
             case "/state":
+                self.onReceiverPoll?()
                 self.respond(connection, data: self.getState(), mime: "application/json; charset=utf-8")
             case "/", "/tv":
                 self.respond(connection, data: Data(Self.tvHTML.utf8), mime: "text/html; charset=utf-8")
