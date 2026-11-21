@@ -47,8 +47,12 @@ struct TVTranslatorView: View {
                                 .font(.system(.body, design: .monospaced))
                                 .textSelection(.enabled)
                             Button("نسخ رابط التلفزيون") {
+                                guard bridge.canShareURL else { return }
                                 UIPasteboard.general.string = bridge.tvURL
                             }
+                            .disabled(!bridge.canShareURL)
+                            Text("إذا تغير رقم المنفذ، افتح الرابط الجديد في متصفح LG. خل التطبيق مفتوح وعلى نفس الشبكة.")
+                                .font(.caption).foregroundStyle(.secondary)
                             Text("صفحة المتصفح وحدها لا تظهر فوق HDMI إلا لو التلفزيون يدعم العرض المتراكب.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
