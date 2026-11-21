@@ -23,6 +23,10 @@ struct TVTranslatorView: View {
     @State private var translationConfiguration: TranslationSession.Configuration?
     @State private var selectedImage: PhotosPickerItem?
     @State private var page = 0
+    @State private var selectedConsole = "Xbox"
+    @State private var ocrRegion = CGRect(x: 0.14, y: 0.73, width: 0.72, height: 0.18)
+    @State private var cameraZoom = 1.0
+    @State private var cropIsEditable = true
 
     private let accent = Color(red: 0.38, green: 0.82, blue: 1)
     private let surface = Color(red: 0.10, green: 0.12, blue: 0.18)
@@ -35,6 +39,19 @@ struct TVTranslatorView: View {
                         .font(.title2.bold()).foregroundStyle(accent)
                     Text("ترجمة مجانية على التلفزيون والجوال")
                         .foregroundStyle(.secondary)
+
+                    consoleSelector
+
+                    HStack(spacing: 8) {
+                        Label("English", systemImage: "character.book.closed")
+                        Image(systemName: "arrow.left").font(.caption)
+                        Label("العربية", systemImage: "character.bubble")
+                    }
+                    .font(.subheadline.bold())
+                    .foregroundStyle(accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(12)
+                    .background(surface, in: RoundedRectangle(cornerRadius: 13))
 
                     Picker("مكان الترجمة", selection: $page) {
                         Text("التلفزيون").tag(0)
@@ -56,6 +73,28 @@ struct TVTranslatorView: View {
                             .disabled(!bridge.canShareURL)
                             Text("إذا تغير رقم المنفذ، افتح الرابط الجديد في متصفح LG. خل التطبيق مفتوح وعلى نفس الشبكة.")
                                 .font(.caption).foregroundStyle(.secondary)
+                            Text("التحكم بمدخل HDMI من الجوال")
+                                .font(.subheadline.bold())
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(0..<5, id: \.self) { port in
+                                        Button(port == 0 ? "ترجمة فقط" : "HDMI \(port)") {
+                                            bridge.hdmiInput = port
+                                        }
+                                        .font(.subheadline.bold())
+                                        .padding(.horizontal, 11).padding(.vertical, 10)
+                                        .background(bridge.hdmiInput == port ? accent : Color.white.opacity(0.12),
+                                                    in: RoundedRectangle(cornerRadius: 10))
+                                        .foregroundStyle(bridge.hdmiInput == port ? Color.black : Color.white)
+                                    }
+                                }
+                            }
+                            Toggle("إظهار قائمة HDMI على شاشة LG", isOn: $bridge.showTVControls)
+                                .tint(accent)
+                            Toggle("عرض الترجمة على LG", isOn: $bridge.subtitleVisible)
+                                .tint(accent)
+                            Text("إخفاء قائمة الصفحة لا يخفي شريط عنوان متصفح LG. زر ملء الشاشة التجريبي موجود في صفحة التلفزيون.")
+                                .font(.caption).foregroundStyle(.secondary)
                             Text("صفحة المتصفح وحدها لا تظهر فوق HDMI إلا لو التلفزيون يدعم العرض المتراكب.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
@@ -65,16 +104,44 @@ struct TVTranslatorView: View {
                         Toggle("قراءة نص اللعبة بالكاميرا تلقائيًا", isOn: $liveCameraEnabled)
                             .tint(accent)
                         if liveCameraEnabled {
-                            GameCameraPreview(scanner: camera)
-                                .frame(height: 220)
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-                                .overlay(alignment: .bottom) {
-                                    Text("وجّه الثلث السفلي من الكاميرا نحو سطر الترجمة في التلفزيون")
-                                        .font(.caption)
-                                        .padding(8)
-                                        .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 8))
-                                        .padding(8)
+                            ZStack {
+                                GameCameraPreview(scanner: camera)
+                                    .aspectRatio(3.0 / 4.0, contentMode: .fit)
+                                    .background(Color.black)
+                                if cropIsEditable {
+                                    OCRCropEditor(region: $ocrRegion)
+                                        .aspectRatio(3.0 / 4.0, contentMode: .fit)
                                 }
+                            }
+                            .aspectRatio(3.0 / 4.0, contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            HStack {
+                                Button(cropIsEditable ? "إنهاء تحديد OCR" : "تعديل مربع OCR") {
+                                    cropIsEditable.toggle()
+                                }
+                                Spacer()
+                                Button("ضبط على النص أسفل الشاشة") {
+                                    ocrRegion = CGRect(x: 0.14, y: 0.73, width: 0.72, height: 0.18)
+                                }
+                            }
+                            .font(.caption).foregroundStyle(accent)
+                            slider("تكبير الكاميرا", $cameraZoom, 1...4, "×")
+                            slider("عرض المربع", Binding(
+                                get: { Double(ocrRegion.width) },
+                                set: { newWidth in
+                                    let width = CGFloat(newWidth)
+                                    ocrRegion.size.width = width
+                                    ocrRegion.origin.x = min(ocrRegion.origin.x, 1 - width)
+                                }), 0.14...1.0, "")
+                            slider("ارتفاع المربع", Binding(
+                                get: { Double(ocrRegion.height) },
+                                set: { newHeight in
+                                    let height = CGFloat(newHeight)
+                                    ocrRegion.size.height = height
+                                    ocrRegion.origin.y = min(ocrRegion.origin.y, 1 - height)
+                                }), 0.07...0.75, "")
+                            Text("اسحب المربع الأزرق أو زواياه الأربع لتحديد النص المطلوب، مثل الصورة اللي أرسلتها.")
+                                .font(.caption).foregroundStyle(.secondary)
                             Text(camera.info).font(.caption).foregroundStyle(.secondary)
                             Button("إيقاف القراءة وإخفاء آخر ترجمة") {
                                 liveCameraEnabled = false
@@ -166,6 +233,8 @@ struct TVTranslatorView: View {
             }
         }
         .onAppear {
+            camera.setRegion(ocrRegion)
+            camera.setZoom(cameraZoom)
             camera.onStableText = { text in
                 guard liveCameraEnabled else { return }
                 input = text
@@ -174,6 +243,12 @@ struct TVTranslatorView: View {
         }
         .onDisappear {
             camera.stop()
+        }
+        .onChange(of: ocrRegion) { _, next in
+            camera.setRegion(next)
+        }
+        .onChange(of: cameraZoom) { _, next in
+            camera.setZoom(next)
         }
         .onChange(of: liveCameraEnabled) { _, enabled in
             if enabled { camera.start() }
@@ -187,6 +262,45 @@ struct TVTranslatorView: View {
                 }
             }
         }
+    }
+
+    private var consoleSelector: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Label("وضع الكونسول", systemImage: "gamecontroller.fill")
+                .font(.title3.bold())
+            HStack(spacing: 10) {
+                ForEach(["Xbox", "PlayStation"], id: \.self) { system in
+                    Button {
+                        selectedConsole = system
+                    } label: {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Image(systemName: system == "Xbox" ? "gamecontroller.fill" : "gamecontroller")
+                                .font(.title)
+                            Text(system).font(.headline)
+                            Text(system == "Xbox" ? "Series X / S" : "PS4 / PS5")
+                                .font(.caption)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(15)
+                        .background(selectedConsole == system
+                                    ? (system == "Xbox" ? Color.green.opacity(0.24) : Color.blue.opacity(0.24))
+                                    : Color.white.opacity(0.08),
+                                    in: RoundedRectangle(cornerRadius: 15))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 15)
+                                .stroke(selectedConsole == system ? accent : .clear, lineWidth: 2)
+                        }
+                        .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Text("الاختيار يضبط واجهة الترجمة فقط؛ اتصال البث المباشر بالكونسول مو مفعّل في هذه النسخة. الترجمة التلقائية حاليًا من كاميرا الجوال.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .background(surface, in: RoundedRectangle(cornerRadius: 18))
     }
 
     private func card<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
