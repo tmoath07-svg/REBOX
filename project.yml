@@ -44,6 +44,7 @@ targets:
           - StarfoldiOSApp.swift
           - Configuration/Info.plist
       - path: "StarfoldVendor/Preview Content"
+      - path: TVTranslator/App/SubtitleBridge.swift
     info:
       path: REBOX/Info.plist
       properties:
@@ -59,4 +60,4 @@ targets:
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
-        MARKETING_VERSION: "1.01"
+        MARKETING_VERSION: "1.02"
