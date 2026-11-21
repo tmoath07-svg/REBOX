@@ -68,19 +68,22 @@ struct REBOXStreamTranslator: View {
             }
         }
         .translationTask(translationConfiguration) { session in
+            // Single-operation ownership of TranslationSession avoids use by
+            // unrelated concurrent translation jobs.
+            let owned = REBOXTranslationHandle(session: session)
             do {
                 if prepareOnly {
-                    try await session.prepareTranslation()
+                    try await owned.prepare()
                     prepareOnly = false
                     lastResult = "اللغات جاهزة أو تم قبول تنزيلها من Apple."
                     return
                 }
                 let content = requestText
                 guard !content.isEmpty else { return }
-                let result = try await session.translate(content)
+                let translated = try await owned.translate(content)
                 guard content == requestText else { return }
-                sender.subtitle = result.targetText
-                translations[cacheKey(content)] = result.targetText
+                sender.subtitle = translated
+                translations[cacheKey(content)] = translated
                 if translations.count > 120 {
                     translations.removeAll()
                     translations[cacheKey(content)] = result.targetText
@@ -260,5 +263,20 @@ struct REBOXStreamTranslator: View {
         } else {
             translationConfiguration = TranslationSession.Configuration(source: source, target: target)
         }
+    }
+}
+
+/// TranslationSession is scoped to a single SwiftUI translationTask invocation.
+/// This Sendable adapter is not shared between tasks; Apple owns the session lifecycle.
+private struct REBOXTranslationHandle: @unchecked Sendable {
+    let session: TranslationSession
+
+    nonisolated func prepare() async throws {
+        try await session.prepareTranslation()
+    }
+
+    nonisolated func translate(_ text: String) async throws -> String {
+        let response = try await session.translate(text)
+        return response.targetText
     }
 }
