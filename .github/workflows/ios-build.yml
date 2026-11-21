@@ -24,6 +24,9 @@ jobs:
       - name: Patch Starfold WebRTC startup
         run: python3 scripts/patch-starfold-stream.py
 
+      - name: Enable no-camera console stream OCR
+        run: python3 scripts/patch-starfold-tv-ocr.py
+
       - name: Select Xcode
         run: |
           xcodebuild -version
